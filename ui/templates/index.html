@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}System Guardian - PC Diagnostic Tool{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 text-center mb-4">
+        <h1 class="display-4">
+            <i class="bi bi-shield-check text-primary"></i>
+            System Guardian
+        </h1>
+        <p class="lead text-muted">Professional PC Diagnostic & Health Check System</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Subscription Verification</h5>
+            </div>
+            <div class="card-body">
+                <form id="verifyForm">
+                    <div class="mb-3">
+                        <label for="subscriptionCode" class="form-label">Subscription Code</label>
+                        <input type="text" class="form-control" id="subscriptionCode" placeholder="Enter your code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceId" class="form-label">Device ID (Optional)</label>
+                        <input type="text" class="form-control" id="deviceId" placeholder="Auto-generated if empty">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Verify & Start Scan
+                    </button>
+                </form>
+                <div id="verifyStatus" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Scan Progress</h5>
+            </div>
+            <div class="card-body">
+                <div id="scanProgress" class="text-center py-5">
+                    <i class="bi bi-info-circle display-1 text-muted"></i>
+                    <p class="lead mt-3">Enter your subscription code to start scanning</p>
+                </div>
+                <div id="scanResults" style="display: none;">
+                    <div class="mb-3">
+                        <h6>Scan Information</h6>
+                        <div id="scanInfo" class="table-responsive"></div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>System Components</h6>
+                        <div id="componentsData"></div>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-danger me-2" onclick="exportPDF()">
+                            <i class="bi bi-file-pdf"></i> Export PDF Report
+                        </button>
+                        <button class="btn btn-info" onclick="exportJSON()">
+                            <i class="bi bi-file-code"></i> Export JSON Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Recommendations</h5>
+            </div>
+            <div class="card-body">
+                <div id="recommendations">
+                    <p class="text-muted">No recommendations yet. Complete a scan to get personalized advice.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentScanData = null;
+
+document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const code = document.getElementById('subscriptionCode').value;
+    const deviceId = document.getElementById('deviceId').value || null;
+    const statusDiv = document.getElementById('verifyStatus');
+    const progressDiv = document.getElementById('scanProgress');
+    
+    statusDiv.innerHTML = '<div class="alert alert-info">Verifying subscription...</div>';
+    
+    try {
+        const verifyResponse = await fetch('/api/verify-subscription', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({code, device_id: deviceId})
+        });
+        
+        const verifyData = await verifyResponse.json();
+        
+        if (verifyData.valid) {
+            statusDiv.innerHTML = '<div class="alert alert-success">Subscription valid! Starting scan...</div>';
+            progressDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Scanning...</span></div><p class="mt-3">Scanning your system components...</p>';
+            
+            const scanResponse = await fetch('/api/start-scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subscription_code: code, device_id: deviceId})
+            });
+            
+            const scanData = await scanResponse.json();
+            
+            if (scanData.success) {
+                currentScanData = scanData.data;
+                displayScanResults(scanData.data);
+                statusDiv.innerHTML = '<div class="alert alert-success">Scan completed successfully!</div>';
+            } else {
+                statusDiv.innerHTML = `<div class="alert alert-danger">Scan failed: ${scanData.error}</div>`;
+            }
+        } else {
+            statusDiv.innerHTML = `<div class="alert alert-danger">${verifyData.message}</div>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+});
+
+function displayScanResults(data) {
+    document.getElementById('scanProgress').style.display = 'none';
+    document.getElementById('scanResults').style.display = 'block';
+    
+    const scanInfo = `
+        <table class="table table-sm">
+            <tr><td><strong>Scan ID:</strong></td><td>${data.scan_id}</td></tr>
+            <tr><td><strong>Timestamp:</strong></td><td>${new Date(data.timestamp).toLocaleString()}</td></tr>
+            <tr><td><strong>Device ID:</strong></td><td>${data.device_id}</td></tr>
+            <tr><td><strong>Overall Health:</strong></td><td><span class="badge bg-${getHealthColor(data.overall_health)}">${data.overall_health}</span></td></tr>
+        </table>
+    `;
+    document.getElementById('scanInfo').innerHTML = scanInfo;
+    
+    const components = `
+        <div class="accordion" id="componentsAccordion">
+            ${createAccordionItem('cpu', 'CPU', data.cpu, 'primary')}
+            ${createAccordionItem('ram', 'RAM', data.ram, 'info')}
+            ${createAccordionItem('disks', 'Disks', data.disks, 'warning')}
+            ${createAccordionItem('gpu', 'GPU', data.gpu, 'success')}
+            ${createAccordionItem('battery', 'Battery', data.battery, 'danger')}
+            ${createAccordionItem('network', 'Network', data.network, 'secondary')}
+            ${createAccordionItem('peripherals', 'Peripherals', data.peripherals, 'dark')}
+        </div>
+    `;
+    document.getElementById('componentsData').innerHTML = components;
+    
+    const recommendations = data.recommendations.map(rec => 
+        `<div class="alert alert-warning mb-2"><i class="bi bi-info-circle"></i> ${rec}</div>`
+    ).join('');
+    document.getElementById('recommendations').innerHTML = recommendations;
+}
+
+function createAccordionItem(id, title, data, color) {
+    const dataStr = JSON.stringify(data, null, 2);
+    return `
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${id}">
+                    <span class="badge bg-${color} me-2">${title}</span>
+                </button>
+            </h2>
+            <div id="collapse${id}" class="accordion-collapse collapse" data-bs-parent="#componentsAccordion">
+                <div class="accordion-body">
+                    <pre class="bg-dark text-light p-3 rounded">${dataStr}</pre>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getHealthColor(health) {
+    const healthLower = health.toLowerCase();
+    if (healthLower.includes('excellent') || healthLower.includes('good')) return 'success';
+    if (healthLower.includes('fair')) return 'warning';
+    return 'danger';
+}
+
+async function exportPDF() {
+    if (!currentScanData) {
+        alert('No scan data available');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/export-pdf', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(currentScanData)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert(`PDF report generated: ${result.file_path}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function exportJSON() {
+    if (!currentScanData) {
+        alert('No scan data available');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/export-json', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(currentScanData)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert(`JSON data exported: ${result.file_path}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+</script>
+{% endblock %}
