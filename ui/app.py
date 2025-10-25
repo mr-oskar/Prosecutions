@@ -87,6 +87,25 @@ def export_json():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/download/<file_type>/<path:file_name>')
+def download_report(file_type, file_name):
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/api/scan/download/{file_type}/{file_name}",
+            stream=True
+        )
+        
+        if response.status_code == 200:
+            return response.content, 200, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': f'attachment; filename="{file_name}"'
+            }
+        else:
+            return jsonify({"success": False, "error": "File not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/list-subscriptions', methods=['GET'])
 def list_subscriptions():
     try:
@@ -104,6 +123,103 @@ def renew_subscription(code):
         response = requests.post(
             f"{API_BASE_URL}/api/subscription/renew/{code}",
             params={'additional_days': additional_days}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/cpu-stress', methods=['POST'])
+def test_cpu_stress():
+    try:
+        data = request.json or {}
+        duration = data.get('duration', 5)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/cpu-stress",
+            params={'duration': duration}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/ram-stress', methods=['POST'])
+def test_ram_stress():
+    try:
+        data = request.json or {}
+        duration = data.get('duration', 5)
+        test_size_mb = data.get('test_size_mb', 100)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/ram-stress",
+            params={'duration': duration, 'test_size_mb': test_size_mb}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/disk-speed', methods=['POST'])
+def test_disk_speed():
+    try:
+        data = request.json or {}
+        mount_point = data.get('mount_point', None)
+        test_size_mb = data.get('test_size_mb', 50)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/disk-speed",
+            params={'mount_point': mount_point, 'test_size_mb': test_size_mb}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/gpu-stress', methods=['POST'])
+def test_gpu_stress():
+    try:
+        data = request.json or {}
+        duration = data.get('duration', 10)
+        gpu_id = data.get('gpu_id', 0)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/gpu-stress",
+            params={'duration': duration, 'gpu_id': gpu_id}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/battery-drain', methods=['POST'])
+def test_battery_drain():
+    try:
+        data = request.json or {}
+        duration = data.get('duration', 30)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/battery-drain",
+            params={'duration': duration}
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/internet-speed', methods=['POST'])
+def test_internet_speed():
+    try:
+        response = requests.post(f"{API_BASE_URL}/api/scan/test/internet-speed")
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/test/network-ping', methods=['POST'])
+def test_network_ping():
+    try:
+        data = request.json or {}
+        host = data.get('host', '8.8.8.8')
+        count = data.get('count', 20)
+        response = requests.post(
+            f"{API_BASE_URL}/api/scan/test/network-ping",
+            params={'host': host, 'count': count}
         )
         return jsonify(response.json())
     except Exception as e:

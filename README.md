@@ -16,31 +16,75 @@ A comprehensive PC diagnostic application with subscription-based access control
 ## 📋 Features | المميزات
 
 ### Core Features | الميزات الأساسية
-- ✅ **Comprehensive Hardware Scanning** - فحص شامل للعتاد
-  - CPU (Model, Cores, Frequency, Temperature, Usage)
-  - RAM (Total, Available, Speed, Usage)
-  - Disk (Type: HDD/SSD/NVMe, Size, Speed, Usage)
-  - GPU (Model, Memory, Temperature, Driver)
-  - Battery (Charge, Health, Status)
-  - Network (Interface, Speed, Ping, Connection Quality)
-  - Peripherals (Keyboard, Mouse, Display, USB Devices)
 
-- 🔐 **Subscription Management** - إدارة الاشتراكات
-  - Code-based access control
-  - Expiration tracking (7, 30, 90, 365 days)
-  - Device binding
-  - Scan count tracking
+#### 🔍 **Enhanced Hardware Scanning** - فحص محسّن للعتاد
+- ✅ **CPU** - معالج
+  - Model, Architecture, Physical/Logical Cores
+  - Frequencies (Current, Min, Max)
+  - Temperature sensors (multiple)
+  - Usage per core, System calls, Context switches
+  - Health score calculation
+  
+- ✅ **RAM** - ذاكرة عشوائية
+  - Total, Available, Used, Free
+  - Cache, Buffers, Shared memory
+  - Swap memory details
+  - Health score and recommendations
+  
+- ✅ **Disk** - أقراص التخزين
+  - Auto-detect type (HDD/SSD/NVMe/SD)
+  - I/O Statistics (read/write counts and bytes)
+  - Mount points, File systems
+  - Health score based on usage
+  
+- ✅ **GPU** - كرت الشاشة
+  - Name, Memory (Total/Used/Free), UUID
+  - Load percentage, Temperature
+  - Driver version, Health score
+  
+- ✅ **Battery** - بطارية
+  - Charge level, Power status
+  - Time remaining (formatted)
+  - Health estimation, Cycle count
+  
+- ✅ **Network** - شبكة
+  - All interfaces with IPv4/IPv6
+  - MAC addresses, MTU, Speed
+  - I/O counters, Error statistics
+  - Connection quality assessment
+  
+- ✅ **Peripherals** - ملحقات
+  - USB devices listing
+  - Display information
+  - Audio devices, Webcams
+  - Keyboard & Mouse detection
 
-- 📄 **Professional Reports** - تقارير احترافية
-  - PDF reports with color-coded status (🟢 Good, 🟡 Warning, 🔴 Critical)
-  - JSON exports with raw data
-  - Personalized recommendations
+#### 🧪 **Advanced Stress Tests** - اختبارات متقدمة
+- ⚡ **CPU Stress Test**: Multi-core load testing with temperature monitoring
+- 💾 **RAM Stress Test**: Memory allocation and read/write performance
+- 💿 **Disk Speed Test**: Real read/write speed measurement (MB/s)
+- 🎮 **GPU Stress Test**: GPU load and temperature monitoring
+- 🔋 **Battery Drain Test**: Power consumption rate analysis
+- 🌐 **Internet Speed Test**: Download/upload speed measurement
+- 📡 **Network Ping Test**: Latency, jitter, and packet loss analysis
 
-- 🌐 **Modern Web Interface** - واجهة ويب حديثة
-  - Dark mode design
-  - Bootstrap 5 responsive layout
-  - Real-time scan progress
-  - Admin panel for subscription management
+#### 📄 **Professional Reports** - تقارير احترافية
+- PDF reports with color-coded health indicators
+- JSON exports with complete raw data
+- **Direct download** functionality for reports
+- Personalized recommendations based on scan results
+
+#### 🔐 **Subscription Management** - إدارة الاشتراكات
+- Code-based access control
+- Expiration tracking (7, 30, 90, 365 days)
+- Device binding for security
+- Scan count tracking
+
+#### 🌐 **Modern Web Interface** - واجهة ويب حديثة
+- Dark mode design
+- Bootstrap 5 responsive layout
+- Real-time scan progress
+- Admin panel for subscription management
 
 ## 🏗️ Architecture | البنية
 
@@ -65,25 +109,54 @@ SystemGuardian/
 ### Prerequisites | المتطلبات
 - Python 3.11+
 - Modern web browser
+- For best results: pip, virtualenv
 
-### Installation | التثبيت
+### Easy Setup (Recommended) | التثبيت السريع (موصى به)
 
-1. **Install Dependencies** | تثبيت المكتبات
+#### On Linux/macOS:
 ```bash
-pip install flask fastapi uvicorn psutil GPUtil reportlab speedtest-cli requests pydantic python-multipart
+chmod +x start.sh
+./start.sh
 ```
 
-2. **Run Backend API** | تشغيل الخادم الخلفي
+#### On Windows:
 ```bash
-python app/main.py
+start.bat
+```
+
+### Manual Setup | التثبيت اليدوي
+
+1. **Create Virtual Environment** | إنشاء بيئة افتراضية
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+```
+
+2. **Install Dependencies** | تثبيت المكتبات
+```bash
+pip install -r requirements.txt
+```
+
+3. **Create Required Directories** | إنشاء المجلدات المطلوبة
+```bash
+mkdir -p db reports/pdfs reports/json
+```
+
+4. **Run Backend API** | تشغيل الخادم الخلفي
+```bash
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 API will run on: `http://localhost:8000`
 
-3. **Run Web Interface** | تشغيل واجهة الويب
+5. **Run Web Interface** (in new terminal) | تشغيل واجهة الويب
 ```bash
 python ui/app.py
 ```
 Web UI will run on: `http://localhost:5000`
+
+### For VS Code Users | لمستخدمي VS Code
+See detailed setup guide: [VSCODE_SETUP.md](VSCODE_SETUP.md)
 
 ## 📖 Usage | الاستخدام
 
@@ -111,10 +184,25 @@ GET    /api/subscription/list       # List all subscriptions
 
 ### Scanning Endpoints
 ```http
-POST   /api/scan/start              # Start system scan
-POST   /api/scan/export-pdf         # Generate PDF report
-POST   /api/scan/export-json        # Export JSON data
+POST   /api/scan/start                    # Start system scan
+POST   /api/scan/export-pdf               # Generate PDF report
+POST   /api/scan/export-json              # Export JSON data
+GET    /api/scan/download/pdf/{filename}  # Download PDF report
+GET    /api/scan/download/json/{filename} # Download JSON data
 ```
+
+### Advanced Testing Endpoints | اختبارات متقدمة
+```http
+POST   /api/scan/test/cpu-stress          # CPU stress test
+POST   /api/scan/test/ram-stress          # RAM stress test
+POST   /api/scan/test/disk-speed          # Disk speed test
+POST   /api/scan/test/gpu-stress          # GPU stress test
+POST   /api/scan/test/battery-drain       # Battery drain test
+POST   /api/scan/test/internet-speed      # Internet speed test
+POST   /api/scan/test/network-ping        # Network ping test
+```
+
+For detailed testing documentation, see: [API_TESTS.md](API_TESTS.md)
 
 ### Example Request
 ```javascript
