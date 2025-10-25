@@ -69,6 +69,11 @@ System Guardian is a comprehensive PC diagnostic application with subscription-b
 - POST `/api/scan/export-json` - Export JSON data
 
 ## Recent Changes
+- 2025-10-25: **MAJOR UPDATE** - Enhanced all hardware scanners with detailed telemetry
+- 2025-10-25: Added 7 working stress test API endpoints for comprehensive testing
+- 2025-10-25: Fixed critical path traversal security vulnerability in download endpoint
+- 2025-10-25: Created complete VS Code setup with configuration files and scripts
+- 2025-10-25: Added API_TESTS.md with comprehensive testing documentation
 - 2025-10-24: Initial project setup with full hardware scanning capability
 - 2025-10-24: Implemented subscription management system
 - 2025-10-24: Created Flask web interface with dark mode
